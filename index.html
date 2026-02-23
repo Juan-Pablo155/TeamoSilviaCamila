@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para Ti 🌿</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    background:#000;
+    color:white;
+    overflow:hidden;
+}
+
+/* ===== MODO SELVA (BLOQUEADO) ===== */
+
+body.locked-mode {
+    background: url('selva.png') center/cover no-repeat fixed;
+}
+
+/* Oscurecer un poco */
+body.locked-mode::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(2px);
+    z-index: 0;
+}
+
+/* ===== LLUVIA REALISTA ===== */
+
+.rain-container{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:1;
+}
+
+.raindrop{
+    position:absolute;
+    width:2px;
+    height:20px;
+    background:rgba(255,255,255,0.3);
+    animation: rainFall linear infinite;
+}
+
+@keyframes rainFall{
+    from{
+        transform: translateY(-100px);
+        opacity:0;
+    }
+    20%{
+        opacity:1;
+    }
+    to{
+        transform: translateY(100vh);
+        opacity:0;
+    }
+}
+
+/* ===== CONTENEDOR ===== */
+
+.container{
+    position:relative;
+    z-index:2;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:20px;
+}
+
+.hidden{
+    display:none;
+}
+
+.fade{
+    animation: fadeIn 1.5s ease forwards;
+}
+
+@keyframes fadeIn{
+    from{opacity:0;}
+    to{opacity:1;}
+}
+
+.countdown{
+    font-size:2rem;
+    margin-top:15px;
+}
+
+button{
+    margin-top:30px;
+    padding:12px 30px;
+    border:none;
+    border-radius:30px;
+    background:white;
+    color:black;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+/* ===== DETALLES DE FONDO HISTORIA ===== */
+
+.story-particles{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:0;
+}
+
+.spark{
+    position:absolute;
+    width:3px;
+    height:3px;
+    background:white;
+    border-radius:50%;
+    opacity:0.4;
+    animation: floatUp linear infinite;
+}
+
+@keyframes floatUp{
+    from{
+        transform:translateY(100vh);
+        opacity:0;
+    }
+    20%{
+        opacity:0.5;
+    }
+    to{
+        transform:translateY(-100px);
+        opacity:0;
+    }
+}
+
+@media(max-width:600px){
+    h1{font-size:1.8rem;}
+    h2{font-size:1.2rem;}
+    .countdown{font-size:1.4rem;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="rain-container" id="rain"></div>
+<div class="story-particles hidden" id="storyParticles"></div>
+
+<div class="container">
+
+<div id="locked">
+    <h2>Algo está esperando por ti...</h2>
+    <p>Se desbloquea en:</p>
+    <div class="countdown" id="countdown"></div>
+</div>
+
+<div id="story" class="hidden">
+
+    <div id="step1" class="fade">
+        <h2 id="text1"></h2>
+        <button onclick="nextStep(2)">Continuar</button>
+    </div>
+
+    <div id="step2" class="hidden">
+        <h2 id="text2"></h2>
+        <button onclick="nextStep(3)">Seguir leyendo</button>
+    </div>
+
+    <div id="step3" class="hidden">
+        <h2 id="text3"></h2>
+        <button onclick="nextStep(4)">Una cosa más</button>
+    </div>
+
+    <div id="step4" class="hidden">
+        <h1>24 de mayo – 9:00 p.m.</h1>
+        <h2>Lima, Perú 🇵🇪</h2>
+        <h1>Voy contigo a ver a Soda Stereo 🎸</h1>
+        <p>Porque no se trata de la banda…<br>Se trata de nosotros.</p>
+
+        <p id="birthday" style="opacity:0;margin-top:40px;font-size:1.6rem;font-weight:500;">
+            Feliz cumpleaños, mi amor ❤️
+        </p>
+
+        <p id="signature" style="opacity:0;margin-top:10px;font-size:1rem;letter-spacing:2px;">
+            by: pJ ♥
+        </p>
+    </div>
+
+</div>
+
+</div>
+
+<audio id="waitingMusic" loop>
+    <source src="espera.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="mainMusic" loop>
+    <source src="principal.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+
+document.body.classList.add("locked-mode");
+
+/* ===== CREAR LLUVIA DINÁMICA ===== */
+const rainContainer = document.getElementById("rain");
+for(let i=0;i<120;i++){
+    const drop = document.createElement("div");
+    drop.classList.add("raindrop");
+    drop.style.left = Math.random()*100+"%";
+    drop.style.animationDuration = (0.5 + Math.random()*0.8)+"s";
+    drop.style.animationDelay = Math.random()*5+"s";
+    rainContainer.appendChild(drop);
+}
+
+/* ===== CONTADOR ===== */
+
+const targetDate = new Date("Feb 23, 2026 18:36:15").getTime();
+const countdown = document.getElementById("countdown");
+const locked = document.getElementById("locked");
+const story = document.getElementById("story");
+const storyParticles = document.getElementById("storyParticles");
+const waitingMusic = document.getElementById("waitingMusic");
+const mainMusic = document.getElementById("mainMusic");
+
+document.body.addEventListener("click", () => {
+    waitingMusic.volume = 0;
+    waitingMusic.play();
+    fadeIn(waitingMusic,0.5);
+}, { once:true });
+
+function fadeIn(audio,maxVol){
+    let vol = 0;
+    let interval = setInterval(()=>{
+        if(vol < maxVol){
+            vol += 0.02;
+            audio.volume = vol;
+        } else clearInterval(interval);
+    },200);
+}
+
+function fadeOut(audio,callback){
+    let vol = audio.volume;
+    let interval = setInterval(()=>{
+        if(vol > 0){
+            vol -= 0.02;
+            audio.volume = vol;
+        } else{
+            clearInterval(interval);
+            audio.pause();
+            callback();
+        }
+    },200);
+}
+
+const timer = setInterval(()=>{
+
+    const now = new Date().getTime();
+    const distance = targetDate - now;
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    countdown.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+    if(distance < 0){
+
+        clearInterval(timer);
+
+        fadeOut(waitingMusic,()=>{
+            mainMusic.volume = 0;
+            mainMusic.play();
+            fadeIn(mainMusic,0.6);
+        });
+
+        document.body.classList.remove("locked-mode");
+        document.body.style.background="#000";
+
+        rainContainer.style.display="none";
+
+        locked.style.display="none";
+        story.classList.remove("hidden");
+
+        storyParticles.classList.remove("hidden");
+
+        createStoryParticles();
+        typeWriter();
+    }
+
+},1000);
+
+/* ===== PARTÍCULAS HISTORIA ===== */
+function createStoryParticles(){
+    for(let i=0;i<40;i++){
+        const spark=document.createElement("div");
+        spark.classList.add("spark");
+        spark.style.left=Math.random()*100+"%";
+        spark.style.animationDuration=(4+Math.random()*6)+"s";
+        spark.style.animationDelay=Math.random()*5+"s";
+        storyParticles.appendChild(spark);
+    }
+}
+
+/* ===== HISTORIA ===== */
+
+const messages=[
+    "No soy el mayor fan de Soda Stereo…",
+    "Pero soy fan de verte feliz.",
+    "Y si escuchar cada canción significa verte sonreír… entonces ahí estaré contigo."
+];
+
+function typeWriter(){
+    typeEffect("text1",messages[0]);
+}
+
+function nextStep(step){
+    document.getElementById("step"+(step-1)).classList.add("hidden");
+    document.getElementById("step"+step).classList.remove("hidden");
+
+    if(step===2) typeEffect("text2",messages[1]);
+    if(step===3) typeEffect("text3",messages[2]);
+    if(step===4){
+        setTimeout(()=>{document.getElementById("birthday").style.opacity="1";},1200);
+        setTimeout(()=>{document.getElementById("signature").style.opacity="1";},2000);
+    }
+}
+
+function typeEffect(id,text){
+    let i=0;
+    const interval=setInterval(()=>{
+        document.getElementById(id).innerHTML+=text.charAt(i);
+        i++;
+        if(i>=text.length) clearInterval(interval);
+    },40);
+}
+
+</script>
+
+</body>
+</html>
